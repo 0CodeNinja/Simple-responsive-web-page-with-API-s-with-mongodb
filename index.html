@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BuildFlow — Project 3: Database Integration</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;800&family=Roboto:wght@300;400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --mocha:#A5856E; --mocha-dark:#8a6d59; --blue:#A0D4E0;
+      --grey:#F2F0EA; --grey-dark:#e4e1d8; --ink:#2c2420;
+      --ink-soft:#5a4f48; --white:#fff; --green:#4caf7d;
+      --red:#e05c5c; --purple:#7c5cbf;
+      --radius:12px; --shadow:0 4px 24px rgba(44,36,32,.10);
+      --shadow-lg:0 12px 48px rgba(44,36,32,.16); --nav-h:64px;
+      --t:.3s cubic-bezier(.4,0,.2,1);
+    }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+    html{scroll-behavior:smooth;}
+    body{font-family:'Roboto',sans-serif;background:var(--grey);color:var(--ink);overflow-x:hidden;}
+    h1,h2,h3{font-family:'Montserrat',sans-serif;font-weight:800;line-height:1.15;}
+    a{text-decoration:none;color:inherit;} ul{list-style:none;} p{color:var(--ink-soft);font-weight:300;}
+    .container{width:min(1120px,92%);margin-inline:auto;}
+    .section-label{font-family:'Montserrat',sans-serif;font-size:.75rem;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--mocha);margin-bottom:.5rem;}
+
+    /* NAV */
+    header{position:fixed;top:0;left:0;right:0;z-index:100;height:var(--nav-h);background:rgba(242,240,234,.95);backdrop-filter:blur(12px);border-bottom:1px solid var(--grey-dark);}
+    header.scrolled{box-shadow:var(--shadow);}
+    nav.main-nav{display:flex;align-items:center;justify-content:space-between;height:100%;}
+    .nav-logo{font-family:'Montserrat',sans-serif;font-weight:800;font-size:1.3rem;display:flex;align-items:center;gap:.4rem;}
+    .nav-logo span{width:26px;height:26px;background:var(--mocha);border-radius:6px;display:inline-block;}
+    .nav-links{display:none;gap:1.75rem;}
+    .nav-links a{font-family:'Montserrat',sans-serif;font-weight:600;font-size:.85rem;color:var(--ink-soft);transition:color var(--t);}
+    .nav-links a:hover{color:var(--mocha);}
+    .hamburger{display:flex;flex-direction:column;gap:5px;cursor:pointer;background:none;border:none;padding:6px;border-radius:6px;}
+    .hamburger span{display:block;width:24px;height:2px;background:var(--ink);border-radius:2px;transition:var(--t);}
+    .hamburger[aria-expanded="true"] span:nth-child(1){transform:translateY(7px) rotate(45deg);}
+    .hamburger[aria-expanded="true"] span:nth-child(2){opacity:0;}
+    .hamburger[aria-expanded="true"] span:nth-child(3){transform:translateY(-7px) rotate(-45deg);}
+    .mobile-menu{display:none;position:fixed;top:var(--nav-h);left:0;right:0;background:var(--grey);padding:1.5rem;z-index:99;flex-direction:column;gap:1rem;border-bottom:1px solid var(--grey-dark);box-shadow:var(--shadow-lg);}
+    .mobile-menu.open{display:flex;}
+    .mobile-menu a{font-family:'Montserrat',sans-serif;font-weight:600;color:var(--ink);padding:.4rem 0;border-bottom:1px solid var(--grey-dark);}
+    @media(min-width:768px){.nav-links{display:flex;}.hamburger{display:none;}}
+
+    /* BUTTONS */
+    .btn{display:inline-flex;align-items:center;gap:.5rem;padding:.7rem 1.6rem;border-radius:50px;font-family:'Montserrat',sans-serif;font-weight:600;font-size:.9rem;cursor:pointer;border:none;transition:var(--t);}
+    .btn-primary{background:var(--mocha);color:var(--white);}
+    .btn-primary:hover{background:var(--mocha-dark);transform:translateY(-2px);box-shadow:var(--shadow);}
+    .btn-outline{background:transparent;color:var(--mocha);border:2px solid var(--mocha);}
+    .btn-outline:hover{background:var(--mocha);color:var(--white);}
+    .btn-danger{background:var(--red);color:var(--white);padding:.4rem .9rem;font-size:.78rem;border-radius:8px;}
+    .btn-edit{background:var(--blue);color:var(--ink);padding:.4rem .9rem;font-size:.78rem;border-radius:8px;}
+    .btn-edit:hover{background:var(--mocha);color:var(--white);}
+    .btn-sm{padding:.5rem 1.1rem;font-size:.82rem;}
+
+    /* HERO */
+    #hero{padding-top:calc(var(--nav-h) + 4.5rem);padding-bottom:4rem;min-height:100svh;display:grid;place-items:center;
+      background:radial-gradient(ellipse 70% 60% at 80% 20%,rgba(160,212,224,.35) 0%,transparent 60%),radial-gradient(ellipse 50% 40% at 10% 80%,rgba(165,133,110,.15) 0%,transparent 60%),var(--grey);}
+    .hero-inner{display:grid;gap:3rem;align-items:center;}
+    @media(min-width:768px){.hero-inner{grid-template-columns:1fr 1fr;}}
+    .hero-badge{display:inline-flex;align-items:center;gap:.5rem;background:var(--white);border:1px solid var(--grey-dark);border-radius:50px;padding:.3rem .9rem;font-size:.78rem;font-family:'Montserrat',sans-serif;font-weight:600;color:var(--purple);box-shadow:var(--shadow);width:fit-content;margin-bottom:.9rem;}
+    .hero-badge .dot{width:8px;height:8px;background:var(--purple);border-radius:50%;animation:pulse 2s infinite;}
+    @keyframes pulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.5;transform:scale(1.4);}}
+    .hero-text h1{font-size:clamp(2rem,5vw,3.5rem);margin-bottom:1.1rem;}
+    .hero-text h1 em{font-style:normal;color:var(--mocha);}
+    .hero-text p{font-size:1.05rem;max-width:50ch;margin-bottom:1.75rem;}
+    .hero-cta{display:flex;gap:1rem;flex-wrap:wrap;}
+    .stats-bar{display:flex;gap:1.5rem;flex-wrap:wrap;margin-top:2rem;padding:1.25rem 1.5rem;background:var(--white);border-radius:var(--radius);border:1px solid var(--grey-dark);box-shadow:var(--shadow);}
+    .stat-item{text-align:center;}
+    .stat-item strong{display:block;font-family:'Montserrat',sans-serif;font-size:1.5rem;font-weight:800;color:var(--mocha);}
+    .stat-item span{font-size:.75rem;color:var(--ink-soft);}
+
+    /* DB STATUS */
+    .db-status{display:inline-flex;align-items:center;gap:.5rem;padding:.5rem 1rem;border-radius:8px;font-family:'Montserrat',sans-serif;font-size:.8rem;font-weight:600;margin-bottom:1rem;}
+    .db-status.connected{background:rgba(76,175,125,.15);color:#2e7d57;}
+    .db-status.disconnected{background:rgba(224,92,92,.15);color:#b33a3a;}
+
+    /* ARCHITECTURE SECTION */
+    #architecture{padding:5rem 0;background:var(--white);}
+    .arch-grid{display:grid;gap:1.5rem;}
+    @media(min-width:768px){.arch-grid{grid-template-columns:repeat(2,1fr);}}
+    @media(min-width:1024px){.arch-grid{grid-template-columns:repeat(4,1fr);}}
+    .arch-card{padding:1.75rem;border-radius:var(--radius);border:1px solid var(--grey-dark);background:var(--grey);text-align:center;transition:transform var(--t),box-shadow var(--t);}
+    .arch-card:hover{transform:translateY(-4px);box-shadow:var(--shadow-lg);}
+    .arch-icon{font-size:2.5rem;margin-bottom:1rem;}
+    .arch-card h3{font-size:1rem;margin-bottom:.4rem;}
+    .arch-badge{display:inline-block;padding:.2rem .6rem;border-radius:4px;font-size:.7rem;font-family:'Montserrat',sans-serif;font-weight:700;margin-bottom:.75rem;}
+    .c-badge{background:rgba(76,175,125,.2);color:#2e7d57;}
+    .r-badge{background:rgba(160,212,224,.4);color:#2a7d8e;}
+    .u-badge{background:rgba(255,193,7,.25);color:#856404;}
+    .d-badge{background:rgba(224,92,92,.2);color:#b33a3a;}
+
+    /* USERS TABLE */
+    #users-section{padding:5rem 0;}
+    .section-head{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;margin-bottom:2rem;}
+    .section-head h2{font-size:clamp(1.4rem,3vw,2rem);}
+    .toolbar{display:flex;gap:.75rem;align-items:center;flex-wrap:wrap;}
+    .search-input{padding:.55rem 1rem;border:1.5px solid var(--grey-dark);border-radius:50px;font-family:'Roboto',sans-serif;font-size:.88rem;background:var(--white);outline:none;transition:border-color var(--t);width:190px;}
+    .search-input:focus{border-color:var(--mocha);}
+    .role-filter{padding:.5rem .8rem;border:1.5px solid var(--grey-dark);border-radius:50px;font-family:'Montserrat',sans-serif;font-size:.8rem;font-weight:600;background:var(--white);outline:none;cursor:pointer;}
+    .table-wrap{overflow-x:auto;border-radius:var(--radius);border:1px solid var(--grey-dark);box-shadow:var(--shadow);}
+    table{width:100%;border-collapse:collapse;background:var(--white);}
+    thead{background:var(--ink);color:var(--white);}
+    th{padding:.85rem 1.1rem;text-align:left;font-family:'Montserrat',sans-serif;font-size:.75rem;font-weight:600;letter-spacing:.05em;text-transform:uppercase;white-space:nowrap;}
+    td{padding:.8rem 1.1rem;border-bottom:1px solid var(--grey);font-size:.88rem;vertical-align:middle;}
+    tr:last-child td{border-bottom:none;}
+    tr:hover td{background:rgba(165,133,110,.04);}
+    .role-badge{display:inline-block;padding:.2rem .65rem;border-radius:50px;font-family:'Montserrat',sans-serif;font-size:.7rem;font-weight:700;}
+    .role-admin{background:rgba(165,133,110,.2);color:var(--mocha-dark);}
+    .role-editor{background:rgba(160,212,224,.35);color:#2a7d8e;}
+    .role-viewer{background:rgba(242,240,234,1);color:var(--ink-soft);border:1px solid var(--grey-dark);}
+    .active-badge{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--green);}
+    .inactive-badge{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--red);}
+    .td-actions{display:flex;gap:.4rem;}
+    .empty-state{padding:3rem;text-align:center;color:var(--ink-soft);font-style:italic;}
+    .pagination{display:flex;gap:.5rem;justify-content:center;margin-top:1.5rem;flex-wrap:wrap;}
+    .page-btn{padding:.4rem .85rem;border-radius:8px;border:1.5px solid var(--grey-dark);background:var(--white);font-family:'Montserrat',sans-serif;font-size:.8rem;font-weight:600;cursor:pointer;transition:var(--t);}
+    .page-btn:hover,.page-btn.active{background:var(--mocha);color:var(--white);border-color:var(--mocha);}
+
+    /* FORMS */
+    #forms-section{padding:5rem 0;background:var(--white);}
+    .forms-grid{display:grid;gap:2rem;}
+    @media(min-width:768px){.forms-grid{grid-template-columns:1fr 1fr;}}
+    .form-card{background:var(--grey);border-radius:var(--radius);padding:2rem;border:1px solid var(--grey-dark);}
+    .form-card h3{margin-bottom:1.5rem;font-size:1.1rem;}
+    .form-group{margin-bottom:1.1rem;}
+    .form-group label{display:block;font-family:'Montserrat',sans-serif;font-size:.78rem;font-weight:600;color:var(--ink-soft);margin-bottom:.35rem;}
+    .form-group input,.form-group select,.form-group textarea{width:100%;padding:.65rem .9rem;border:1.5px solid var(--grey-dark);border-radius:8px;font-family:'Roboto',sans-serif;font-size:.9rem;background:var(--white);outline:none;transition:border-color var(--t);color:var(--ink);}
+    .form-group input:focus,.form-group select:focus,.form-group textarea:focus{border-color:var(--mocha);}
+    .form-group textarea{resize:vertical;min-height:90px;}
+
+    /* SCHEMA VIEWER */
+    #schema-section{padding:5rem 0;}
+    .schema-grid{display:grid;gap:2rem;}
+    @media(min-width:768px){.schema-grid{grid-template-columns:1fr 1fr;}}
+    .schema-card{background:var(--ink);color:var(--white);border-radius:var(--radius);padding:1.75rem;font-family:'Courier New',monospace;font-size:.8rem;line-height:1.8;}
+    .schema-card h3{font-family:'Montserrat',sans-serif;font-size:.9rem;color:var(--blue);margin-bottom:1rem;font-weight:700;}
+    .s-key{color:#7ec8e3;}
+    .s-type{color:#ffc12f;}
+    .s-val{color:#a8d5a2;}
+    .s-comment{color:#666;font-style:italic;}
+    .s-constraint{color:#ff9e7a;}
+
+    /* TOAST */
+    #toast-container{position:fixed;bottom:1.5rem;right:1.5rem;z-index:999;display:flex;flex-direction:column;gap:.5rem;}
+    .toast{padding:.75rem 1.25rem;border-radius:10px;font-family:'Montserrat',sans-serif;font-size:.85rem;font-weight:600;color:var(--white);box-shadow:var(--shadow-lg);animation:toastIn .3s ease;min-width:240px;display:flex;align-items:center;gap:.6rem;}
+    .toast.success{background:var(--green);}
+    .toast.error{background:var(--red);}
+    .toast.info{background:var(--mocha);}
+    @keyframes toastIn{from{opacity:0;transform:translateX(20px);}to{opacity:1;transform:translateX(0);}}
+
+    /* MODAL */
+    .modal-overlay{display:none;position:fixed;inset:0;background:rgba(44,36,32,.5);z-index:200;place-items:center;backdrop-filter:blur(4px);}
+    .modal-overlay.open{display:grid;}
+    .modal{background:var(--white);border-radius:var(--radius);padding:2rem;width:min(480px,92%);box-shadow:var(--shadow-lg);}
+    .modal h3{margin-bottom:1.5rem;font-size:1.1rem;}
+    .modal-actions{display:flex;gap:.75rem;justify-content:flex-end;margin-top:1.5rem;}
+
+    footer{background:var(--ink);color:rgba(255,255,255,.5);padding:2.5rem 0;text-align:center;font-size:.85rem;}
+    footer strong{color:var(--mocha);}
+    :focus-visible{outline:2px solid var(--mocha);outline-offset:3px;border-radius:4px;}
+  </style>
+</head>
+<body>
+
+<div id="toast-container" aria-live="polite"></div>
+
+<!-- Edit Modal -->
+<div class="modal-overlay" id="edit-modal" role="dialog" aria-modal="true">
+  <div class="modal">
+    <h3>✏️ Edit User</h3>
+    <input type="hidden" id="edit-id" />
+    <div class="form-group"><label>Full Name</label><input type="text" id="edit-name" /></div>
+    <div class="form-group"><label>Email</label><input type="email" id="edit-email" /></div>
+    <div class="form-group"><label>Role</label>
+      <select id="edit-role"><option value="viewer">Viewer</option><option value="editor">Editor</option><option value="admin">Admin</option></select>
+    </div>
+    <div class="form-group"><label>Status</label>
+      <select id="edit-active"><option value="true">Active</option><option value="false">Inactive</option></select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline btn-sm" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary btn-sm" onclick="submitEdit()">Save to MongoDB →</button>
+    </div>
+  </div>
+</div>
+
+<!-- HEADER -->
+<header id="site-header">
+  <nav class="main-nav container" aria-label="Primary">
+    <a href="#hero" class="nav-logo"><span></span>BuildFlow</a>
+    <ul class="nav-links">
+      <li><a href="#architecture">CRUD</a></li>
+      <li><a href="#schema-section">Schema</a></li>
+      <li><a href="#users-section">Users</a></li>
+      <li><a href="#forms-section">Forms</a></li>
+    </ul>
+    <button class="hamburger" id="hamburger" aria-expanded="false" aria-label="Toggle menu">
+      <span></span><span></span><span></span>
+    </button>
+  </nav>
+</header>
+
+<nav class="mobile-menu" id="mobile-menu">
+  <a href="#architecture" onclick="closeMobile()">CRUD</a>
+  <a href="#schema-section" onclick="closeMobile()">Schema</a>
+  <a href="#users-section" onclick="closeMobile()">Users</a>
+  <a href="#forms-section" onclick="closeMobile()">Forms</a>
+</nav>
+
+<main id="main">
+
+  <!-- HERO -->
+  <section id="hero">
+    <div class="container">
+      <div class="hero-inner">
+        <div class="hero-text">
+          <div class="hero-badge"><span class="dot"></span>Project 3 — Database Integration</div>
+          <div class="db-status" id="db-status-badge">⏳ Checking database...</div>
+          <h1>Data now lives<br/>in <em>MongoDB</em><br/>forever.</h1>
+          <p>Project 1 (Frontend) + Project 2 (API) + Project 3 (MongoDB) = Complete Full Stack Application with real persistent storage.</p>
+          <div class="hero-cta">
+            <a href="#users-section" class="btn btn-primary">View Live Data →</a>
+            <a href="#schema-section" class="btn btn-outline">See Schema</a>
+          </div>
+          <div class="stats-bar">
+            <div class="stat-item"><strong id="stat-users">...</strong><span>Users in DB</span></div>
+            <div class="stat-item"><strong id="stat-contacts">...</strong><span>Messages</span></div>
+            <div class="stat-item"><strong id="stat-unread">...</strong><span>Unread</span></div>
+            <div class="stat-item"><strong id="stat-admins">...</strong><span>Admins</span></div>
+          </div>
+        </div>
+        <!-- Visual -->
+        <div style="background:var(--ink);border-radius:20px;padding:1.75rem;box-shadow:var(--shadow-lg);">
+          <div style="font-family:'Courier New',monospace;font-size:.78rem;color:#a8d5a2;line-height:2.1;">
+            <div style="color:#7ec8e3;margin-bottom:.5rem;">// MongoDB Document</div>
+            <div><span style="color:#ffc12f;">{</span></div>
+            <div>&nbsp;&nbsp;<span style="color:#7ec8e3;">"_id"</span>: <span style="color:#ff9e7a;">"ObjectId(...)"</span>,</div>
+            <div>&nbsp;&nbsp;<span style="color:#7ec8e3;">"name"</span>: <span style="color:#a8d5a2;">"Sara Raza"</span>,</div>
+            <div>&nbsp;&nbsp;<span style="color:#7ec8e3;">"email"</span>: <span style="color:#a8d5a2;">"sara@..."</span>,</div>
+            <div>&nbsp;&nbsp;<span style="color:#7ec8e3;">"role"</span>: <span style="color:#a8d5a2;">"admin"</span>,</div>
+            <div>&nbsp;&nbsp;<span style="color:#7ec8e3;">"isActive"</span>: <span style="color:#ff9e7a;">true</span>,</div>
+            <div>&nbsp;&nbsp;<span style="color:#7ec8e3;">"createdAt"</span>: <span style="color:#a8d5a2;">"2026-..."</span>,</div>
+            <div><span style="color:#ffc12f;">}</span></div>
+            <div style="margin-top:.75rem;color:#4caf7d;">✅ Saved to MongoDB Atlas</div>
+            <div style="color:#4caf7d;">✅ Persists after server restart</div>
+            <div style="color:#4caf7d;">✅ Schema validated by Mongoose</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CRUD ARCHITECTURE -->
+  <section id="architecture">
+    <div class="container" style="padding:5rem 0;">
+      <div style="text-align:center;margin-bottom:2.5rem;">
+        <p class="section-label">The Four Pillars</p>
+        <h2 style="font-size:clamp(1.6rem,3vw,2.4rem);">CRUD → HTTP → MongoDB</h2>
+        <p style="max-width:55ch;margin:.5rem auto 0;">Every database operation maps to an HTTP method and a Mongoose query.</p>
+      </div>
+      <div class="arch-grid">
+        <div class="arch-card">
+          <div class="arch-icon">🌱</div>
+          <span class="arch-badge c-badge">CREATE</span>
+          <h3>POST → INSERT</h3>
+          <p style="font-size:.85rem;">User.save() — Adds a new document to MongoDB collection permanently.</p>
+          <code style="font-size:.72rem;background:var(--ink);color:#a8d5a2;padding:.4rem .6rem;border-radius:6px;display:block;margin-top:.75rem;">new User({...}).save()</code>
+        </div>
+        <div class="arch-card">
+          <div class="arch-icon">🔍</div>
+          <span class="arch-badge r-badge">READ</span>
+          <h3>GET → SELECT</h3>
+          <p style="font-size:.85rem;">User.find() — Retrieves documents from MongoDB. Supports filter, sort, pagination.</p>
+          <code style="font-size:.72rem;background:var(--ink);color:#a8d5a2;padding:.4rem .6rem;border-radius:6px;display:block;margin-top:.75rem;">User.find(filter).sort()</code>
+        </div>
+        <div class="arch-card">
+          <div class="arch-icon">✏️</div>
+          <span class="arch-badge u-badge">UPDATE</span>
+          <h3>PUT → UPDATE</h3>
+          <p style="font-size:.85rem;">findByIdAndUpdate() — Modifies an existing document. runValidators ensures schema rules.</p>
+          <code style="font-size:.72rem;background:var(--ink);color:#a8d5a2;padding:.4rem .6rem;border-radius:6px;display:block;margin-top:.75rem;">findByIdAndUpdate(id,data)</code>
+        </div>
+        <div class="arch-card">
+          <div class="arch-icon">🗑️</div>
+          <span class="arch-badge d-badge">DELETE</span>
+          <h3>DELETE → REMOVE</h3>
+          <p style="font-size:.85rem;">findByIdAndDelete() — Permanently removes a document from the collection.</p>
+          <code style="font-size:.72rem;background:var(--ink);color:#a8d5a2;padding:.4rem .6rem;border-radius:6px;display:block;margin-top:.75rem;">findByIdAndDelete(id)</code>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SCHEMA VIEWER -->
+  <section id="schema-section" style="padding:5rem 0;background:var(--white);">
+    <div class="container">
+      <div style="text-align:center;margin-bottom:2.5rem;">
+        <p class="section-label">Blueprint</p>
+        <h2 style="font-size:clamp(1.6rem,3vw,2.4rem);">Database Schema Design</h2>
+        <p style="max-width:50ch;margin:.5rem auto 0;">Mongoose schemas enforce structure, types, and constraints — the database's immune system.</p>
+      </div>
+      <div class="schema-grid">
+        <div class="schema-card">
+          <h3>📋 User Schema</h3>
+          <div><span class="s-key">name</span>: {</div>
+          <div>&nbsp;&nbsp;<span class="s-type">type</span>: <span class="s-val">String</span>,</div>
+          <div>&nbsp;&nbsp;<span class="s-constraint">required</span>: <span class="s-val">true</span>, <span class="s-comment">// NOT NULL</span></div>
+          <div>&nbsp;&nbsp;<span class="s-constraint">minlength</span>: <span class="s-val">2</span>,</div>
+          <div>&nbsp;&nbsp;<span class="s-constraint">maxlength</span>: <span class="s-val">50</span></div>
+          <div>},</div>
+          <div><span class="s-key">email</span>: {</div>
+          <div>&nbsp;&nbsp;<span class="s-type">type</span>: <span class="s-val">String</span>,</div>
+          <div>&nbsp;&nbsp;<span class="s-constraint">unique</span>: <span class="s-val">true</span>, <span class="s-comment">// UNIQUE</span></div>
+          <div>&nbsp;&nbsp;<span class="s-constraint">match</span>: <span class="s-val">/email regex/</span></div>
+          <div>},</div>
+          <div><span class="s-key">role</span>: {</div>
+          <div>&nbsp;&nbsp;<span class="s-type">enum</span>: <span class="s-val">['admin','editor','viewer']</span> <span class="s-comment">// CHECK</span></div>
+          <div>},</div>
+          <div><span class="s-key">timestamps</span>: <span class="s-val">true</span> <span class="s-comment">// auto createdAt/updatedAt</span></div>
+        </div>
+        <div class="schema-card">
+          <h3>📨 Contact Schema</h3>
+          <div><span class="s-key">name</span>: {</div>
+          <div>&nbsp;&nbsp;<span class="s-type">type</span>: <span class="s-val">String</span>,</div>
+          <div>&nbsp;&nbsp;<span class="s-constraint">required</span>: <span class="s-val">true</span></div>
+          <div>},</div>
+          <div><span class="s-key">email</span>: {</div>
+          <div>&nbsp;&nbsp;<span class="s-type">type</span>: <span class="s-val">String</span>,</div>
+          <div>&nbsp;&nbsp;<span class="s-constraint">required</span>: <span class="s-val">true</span></div>
+          <div>},</div>
+          <div><span class="s-key">message</span>: {</div>
+          <div>&nbsp;&nbsp;<span class="s-constraint">minlength</span>: <span class="s-val">10</span>,</div>
+          <div>&nbsp;&nbsp;<span class="s-constraint">maxlength</span>: <span class="s-val">1000</span></div>
+          <div>},</div>
+          <div><span class="s-key">isRead</span>: { <span class="s-type">type</span>: <span class="s-val">Boolean</span>, <span class="s-type">default</span>: <span class="s-val">false</span> },</div>
+          <div><span class="s-key">timestamps</span>: <span class="s-val">true</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- USERS TABLE -->
+  <section id="users-section" style="padding:5rem 0;">
+    <div class="container">
+      <div class="section-head">
+        <div>
+          <p class="section-label">Live MongoDB Data</p>
+          <h2>Users Collection</h2>
+        </div>
+        <div class="toolbar">
+          <input class="search-input" type="text" id="search-input" placeholder="Search users…" oninput="handleSearch(this.value)" />
+          <select class="role-filter" id="role-filter" onchange="loadUsers()">
+            <option value="">All Roles</option>
+            <option value="admin">Admin</option>
+            <option value="editor">Editor</option>
+            <option value="viewer">Viewer</option>
+          </select>
+          <button class="btn btn-primary btn-sm" onclick="loadUsers()">↻ Refresh</button>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr>
+            <th>Status</th><th>Name</th><th>Email</th><th>Role</th><th>Created</th><th>Actions</th>
+          </tr></thead>
+          <tbody id="users-tbody"><tr><td colspan="6" class="empty-state">Loading from MongoDB…</td></tr></tbody>
+        </table>
+      </div>
+      <div class="pagination" id="pagination"></div>
+    </div>
+  </section>
+
+  <!-- FORMS -->
+  <section id="forms-section">
+    <div class="container" style="padding:5rem 0;">
+      <div style="text-align:center;margin-bottom:2.5rem;">
+        <p class="section-label">Persistent Storage</p>
+        <h2 style="font-size:clamp(1.6rem,3vw,2.4rem);">Save Data to MongoDB</h2>
+        <p style="max-width:50ch;margin:.5rem auto 0;">Form submissions are permanently stored in the database.</p>
+      </div>
+      <div class="forms-grid">
+        <div class="form-card">
+          <h3>➕ Add User to MongoDB</h3>
+          <div class="form-group"><label>Full Name *</label><input type="text" id="new-name" placeholder="e.g. Zara Ahmed" /></div>
+          <div class="form-group"><label>Email Address *</label><input type="email" id="new-email" placeholder="zara@buildflow.com" /></div>
+          <div class="form-group"><label>Role</label>
+            <select id="new-role"><option value="viewer">Viewer</option><option value="editor">Editor</option><option value="admin">Admin</option></select>
+          </div>
+          <button class="btn btn-primary" style="width:100%;justify-content:center;" onclick="addUser()">Save to MongoDB →</button>
+        </div>
+        <div class="form-card">
+          <h3>📨 Contact Form</h3>
+          <div class="form-group"><label>Your Name *</label><input type="text" id="c-name" placeholder="Your full name" /></div>
+          <div class="form-group"><label>Email *</label><input type="email" id="c-email" placeholder="your@email.com" /></div>
+          <div class="form-group"><label>Message *</label><textarea id="c-message" placeholder="Min 10 characters…"></textarea></div>
+          <button class="btn btn-primary" style="width:100%;justify-content:center;" onclick="submitContact()">Send & Save to DB →</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <p>Built for <strong>DecodeLabs</strong> Internship 2026 — Project 1 (HTML/CSS/JS) + Project 2 (Express API) + Project 3 (MongoDB) 🗄️</p>
+</footer>
+
+<script>
+  const API = '';
+  let currentPage = 1;
+  let searchTimer;
+
+  // ── Toast ────────────────────────────────────────────────
+  function showToast(msg, type='success') {
+    const t = document.createElement('div');
+    t.className = `toast ${type}`;
+    t.textContent = (type==='success'?'✅':type==='error'?'❌':'ℹ️') + ' ' + msg;
+    document.getElementById('toast-container').appendChild(t);
+    setTimeout(() => t.remove(), 3500);
+  }
+
+  // ── API Helper ───────────────────────────────────────────
+  async function apiFetch(method, path, body=null) {
+    const opts = { method, headers: {'Content-Type':'application/json'} };
+    if (body) opts.body = JSON.stringify(body);
+    const res  = await fetch(API + path, opts);
+    const data = await res.json();
+    return { ok: res.ok, status: res.status, data };
+  }
+
+  // ── Stats ────────────────────────────────────────────────
+  async function loadStats() {
+    try {
+      const { data } = await apiFetch('GET', '/api/stats');
+      if (data.success) {
+        document.getElementById('stat-users').textContent    = data.data.totalUsers;
+        document.getElementById('stat-contacts').textContent = data.data.totalContacts;
+        document.getElementById('stat-unread').textContent   = data.data.unreadMessages;
+        document.getElementById('stat-admins').textContent   = data.data.roles.admin;
+        const badge = document.getElementById('db-status-badge');
+        if (data.data.dbStatus === 'Connected') {
+          badge.className = 'db-status connected';
+          badge.textContent = '✅ MongoDB Connected';
+        } else {
+          badge.className = 'db-status disconnected';
+          badge.textContent = '❌ Database Disconnected — Add MONGODB_URI to .env';
+        }
+      }
+    } catch(e) {
+      document.getElementById('db-status-badge').className = 'db-status disconnected';
+      document.getElementById('db-status-badge').textContent = '❌ API Server not running';
+    }
+  }
+
+  // ── Load Users ───────────────────────────────────────────
+  async function loadUsers() {
+    const search = document.getElementById('search-input').value;
+    const role   = document.getElementById('role-filter').value;
+    const tbody  = document.getElementById('users-tbody');
+    tbody.innerHTML = '<tr><td colspan="6" class="empty-state">Loading from MongoDB…</td></tr>';
+
+    let path = `/api/users?page=${currentPage}&limit=8`;
+    if (role)   path += `&role=${role}`;
+    if (search) path += `&search=${encodeURIComponent(search)}`;
+
+    try {
+      const { data } = await apiFetch('GET', path);
+      if (!data.success || !data.data.users.length) {
+        tbody.innerHTML = '<tr><td colspan="6" class="empty-state">No users found in database.</td></tr>';
+        document.getElementById('pagination').innerHTML = '';
+        return;
+      }
+      tbody.innerHTML = data.data.users.map(u => `
+        <tr>
+          <td><span class="${u.isActive ? 'active-badge' : 'inactive-badge'}" title="${u.isActive ? 'Active' : 'Inactive'}"></span></td>
+          <td><strong>${u.name}</strong></td>
+          <td>${u.email}</td>
+          <td><span class="role-badge role-${u.role}">${u.role}</span></td>
+          <td>${new Date(u.createdAt).toLocaleDateString()}</td>
+          <td>
+            <div class="td-actions">
+              <button class="btn btn-edit" onclick='openEdit(${JSON.stringify(u)})'>Edit</button>
+              <button class="btn btn-danger" onclick="deleteUser('${u.id}','${u.name}')">Delete</button>
+            </div>
+          </td>
+        </tr>`).join('');
+
+      // Pagination
+      const { pages, page } = data.data.pagination;
+      const pg = document.getElementById('pagination');
+      pg.innerHTML = '';
+      if (pages > 1) {
+        for (let i=1; i<=pages; i++) {
+          const b = document.createElement('button');
+          b.className = 'page-btn' + (i === page ? ' active' : '');
+          b.textContent = i;
+          b.onclick = () => { currentPage = i; loadUsers(); };
+          pg.appendChild(b);
+        }
+      }
+    } catch(e) {
+      tbody.innerHTML = '<tr><td colspan="6" class="empty-state">Cannot connect to API. Make sure server is running.</td></tr>';
+    }
+  }
+
+  function handleSearch(val) {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(() => { currentPage = 1; loadUsers(); }, 350);
+  }
+
+  // ── Add User ─────────────────────────────────────────────
+  async function addUser() {
+    const name  = document.getElementById('new-name').value.trim();
+    const email = document.getElementById('new-email').value.trim();
+    const role  = document.getElementById('new-role').value;
+    if (!name || !email) { showToast('Name and email required', 'error'); return; }
+    const { ok, data } = await apiFetch('POST', '/api/users', { name, email, role });
+    if (ok) {
+      showToast(`"${data.data.name}" saved to MongoDB!`);
+      document.getElementById('new-name').value  = '';
+      document.getElementById('new-email').value = '';
+      loadUsers(); loadStats();
+    } else {
+      showToast(data.message, 'error');
+    }
+  }
+
+  // ── Delete ───────────────────────────────────────────────
+  async function deleteUser(id, name) {
+    if (!confirm(`Delete "${name}" from MongoDB? This is permanent.`)) return;
+    const { ok, data } = await apiFetch('DELETE', `/api/users/${id}`);
+    if (ok) { showToast('User deleted from database'); loadUsers(); loadStats(); }
+    else    showToast(data.message, 'error');
+  }
+
+  // ── Edit Modal ───────────────────────────────────────────
+  function openEdit(u) {
+    document.getElementById('edit-id').value     = u.id;
+    document.getElementById('edit-name').value   = u.name;
+    document.getElementById('edit-email').value  = u.email;
+    document.getElementById('edit-role').value   = u.role;
+    document.getElementById('edit-active').value = String(u.isActive);
+    document.getElementById('edit-modal').classList.add('open');
+  }
+
+  function closeModal() { document.getElementById('edit-modal').classList.remove('open'); }
+
+  async function submitEdit() {
+    const id       = document.getElementById('edit-id').value;
+    const name     = document.getElementById('edit-name').value.trim();
+    const email    = document.getElementById('edit-email').value.trim();
+    const role     = document.getElementById('edit-role').value;
+    const isActive = document.getElementById('edit-active').value === 'true';
+    const { ok, data } = await apiFetch('PUT', `/api/users/${id}`, { name, email, role, isActive });
+    if (ok) { showToast('User updated in MongoDB!'); closeModal(); loadUsers(); }
+    else    showToast(data.message, 'error');
+  }
+
+  // ── Contact ──────────────────────────────────────────────
+  async function submitContact() {
+    const name    = document.getElementById('c-name').value.trim();
+    const email   = document.getElementById('c-email').value.trim();
+    const message = document.getElementById('c-message').value.trim();
+    const { ok, data } = await apiFetch('POST', '/api/contacts', { name, email, message });
+    if (ok) {
+      showToast('Message saved to MongoDB!');
+      document.getElementById('c-name').value = document.getElementById('c-email').value = document.getElementById('c-message').value = '';
+      loadStats();
+    } else showToast(data.message, 'error');
+  }
+
+  // ── Nav ──────────────────────────────────────────────────
+  const hamburger  = document.getElementById('hamburger');
+  const mobileMenu = document.getElementById('mobile-menu');
+  hamburger.addEventListener('click', () => {
+    const open = mobileMenu.classList.toggle('open');
+    hamburger.setAttribute('aria-expanded', open);
+  });
+  function closeMobile() { mobileMenu.classList.remove('open'); hamburger.setAttribute('aria-expanded','false'); }
+  document.addEventListener('keydown', e => { if(e.key==='Escape'){closeModal();closeMobile();} });
+  document.getElementById('edit-modal').addEventListener('click', function(e){ if(e.target===this)closeModal(); });
+  window.addEventListener('scroll', () => {
+    document.getElementById('site-header').classList.toggle('scrolled', window.scrollY > 60);
+  }, {passive:true});
+
+  // ── Scroll Reveal ────────────────────────────────────────
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(e => { if(e.isIntersecting){ e.target.style.opacity='1'; e.target.style.transform='translateY(0)'; observer.unobserve(e.target); } });
+  }, {threshold:0.08});
+  document.querySelectorAll('.arch-card,.form-card,.schema-card').forEach((el,i) => {
+    el.style.opacity='0'; el.style.transform='translateY(20px)';
+    el.style.transition=`opacity .5s ease ${i*80}ms, transform .5s ease ${i*80}ms`;
+    observer.observe(el);
+  });
+
+  // ── Init ────────────────────────────────────────── 
+  loadUsers();
+  loadStats();
+</script>
+</body>
+</html>
